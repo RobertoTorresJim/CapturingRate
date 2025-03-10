@@ -19,6 +19,10 @@ public class Capsuleball : MonoBehaviour
     private Vector3 targetPoint; // Posición del Monster
     private float journeyProgress = 0f; // Progreso del movimiento [0,1]
     private bool isMoving = true; // Controla el movimiento de la Capsule
+    private Renderer monsterRenderer;//Render del Mounstro para controlar su visibilidad
+    private Vector3 originalMonsterScale;//Escala original del Mousntro
+    private bool hasCollided = false;
+
 
     void Start()
     {
@@ -26,6 +30,8 @@ public class Capsuleball : MonoBehaviour
         {
             startPoint = transform.position;
             targetPoint = targetMonster.transform.position;
+	    monsterRenderer = targetMonster.GetComponent<Renderer>();
+	    originalMonsterScale = targetMonster.transform.localScale;
         }
     }
 
@@ -55,9 +61,88 @@ public class Capsuleball : MonoBehaviour
         // Comprueba si alcanzó el objetivo
         if (journeyProgress >= 1f)
         {
-            isMoving = false;
-            StartCoroutine(AttemptCapture());
+	//NOTA: VALIDAR EL COMPORTAMIENTO DE LA BALL AL LLEGAR A ESE RANGO
+//            isMoving = false;
+//	    hasCollided = true;
+//	    OnImpcat();
+//            StartCoroutine(AttemptCapture());
         }
+    }
+    
+    void OnCOllisionEnter(Collision collision){
+	    //Comprueba si la colision sucede
+	    if(collision.gameObject == targetMonster){
+		    hasCollided = true;
+		    OnImpact();
+	    }
+    }
+
+    void OnImpact(){
+	// Detén el momvimiento y ajusta la pocisión exacta
+    	isMoving = false;
+	//Mueve al Mounstro a la CapsuleBall
+	StartCoroutine(MoveMonsterToBall());
+    }
+
+    IEnumerator MoveMonsterToBall(){
+	//Duración de la animación
+	float duration = 0.5f;
+	Vector3 startPos = targetMonster.transform.position;
+	Vector3 endPos = transform.position; //Posición de la capsuleball
+
+	float elapsed = 0f;
+	while ( elapsed < duration){
+	    elapsed += Time.deltaTime;
+	    float t = elapsed / duration;
+	    targetPokemon.transform.position = Vector3.Lerp(startPos, endPos, t);
+	    yield return null;
+	}
+
+	// Comienza la animación de entrada a la capsuleball
+	StartCOroutine(AnimatieMosnterIntoBall();
+    }
+
+    IEnumerator AnimateMonsterIntoBall()
+    {
+    	//Reduce el tamaño del Mounstro gradualmente
+    	float duration = 0.5f; // Duracion de la animación
+    	Vector3 startScale = targetMonster.transform.localScale;
+    	Vector endScale = Vector3.zero; //Se reduce hasta desaparecer
+
+    	float elapsed = 0f;
+    	while (elapsed < duration)
+    	{
+    	    elapsed += Time.deltaTime;
+	    float t = elapsed / duration;
+	    targetMonster.transform.localScale = Vector3.Lerp(startScale, endScale, t);
+    	}
+
+    	targetMonster.transform.localScale = endScale; //Asegura que esté comletamente reducido
+    	monsterRenderer.enabled = false; // Oculta el Mounstro
+
+    	// Hace qe la CapsuleBall caiga al suelo
+    	StartCoroutine(DropBallToGround());
+    }
+
+    IEnumerator DropBallToGround()
+    {
+	// Simula la caída al suelo
+	float furation = 0.3f;
+	Vector3 startPos = transform.position;
+	Vector3 endPos = startPos;
+	endPos.y = 0; //Asume que el suelo está en y = 0
+
+	float elapsed = 0f;
+	while (elapsed < duration)
+	{
+	    elapsed += Time.DeltaTime;
+	    float t = elapsed / duration;
+	    transform.position = Vector.Lerp(startPos, endPos, t);
+	    yield return null;
+	}
+
+	// COmienza las sacudidas para decidir la captura
+	StartCoroutine(AttemptCapture());
     }
 
     IEnumerator AttemptCapture()
